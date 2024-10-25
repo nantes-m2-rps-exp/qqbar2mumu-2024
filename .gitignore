@@ -1,0 +1,9 @@
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+*.root
+.spack-env
+spack.lock
+curl.config.txt
+checksums.txt
+date-*.txt
+cloud-init.yaml
