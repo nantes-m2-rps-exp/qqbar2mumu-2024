@@ -69,6 +69,9 @@ Pour n'importe quel push, vous devez être en mesure de vous authentifier auprè
 
 > Attention, ce token n'a rien à voir avec votre mot de passe d'accès à github.
 
+> Pour ne pas avoir à retaper le token lors des différents push, on peut utiliser (une fois) la commande `git config credential.helper store`, qui stockera
+> le token après la première demande interactive.
+> Attention : cette commande stocke "en clair" le token dans `$HOME/.git-credentials`.
 
 ## Pull request 
 
