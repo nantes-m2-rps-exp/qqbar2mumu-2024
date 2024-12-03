@@ -90,5 +90,5 @@ Ensuite, juste avant de committer un changement dans un notebook `mon_notebook.i
 
 ```shell
 cd notebooks
-$HOME/.local/bin/nbstripout mon_notebook.ipynb
+$HOME/.local/bin/nbstripout --keep-id mon_notebook.ipynb
 ```
