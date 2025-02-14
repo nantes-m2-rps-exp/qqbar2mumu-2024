@@ -35,6 +35,37 @@ print("vector version",vector.__version__)
 
 vector.register_awkward()
 
+
+# %%
+###################### Création d'une fonction qui calcul AxE pour un run ############################
+def A_E(y_rec, y_gen):
+    """Return the acceptance efficiency for one run and the associated error"""
+    # Appliquer le filtre de rapidité
+    filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4)]
+    y_rec_f = ak.flatten(filtered_y_rec)  #applatir les données pour l'histo
+
+    filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)]
+    y_gen_f = ak.flatten(filtered_y_gen)  #applatir les données pour l'histo
+
+    #histo pour la rapidité des jpsi reconstruit
+    yN_rec, yBins_rec = np.histogram(y_rec_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
+    #histo pour la rapidité des jpsi généré
+    yN_gen, yBins_gen = np.histogram(y_gen_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
+
+    err_N_rec_y = np.sqrt(yN_rec)
+    err_N_gen_y = np.sqrt(yN_gen)
+
+    # Calcul de l'acceptance efficacité et son erreur pour chaque bin en rapidité entre 2.5 et 4
+    acceptance_eff_y = yN_rec / yN_gen  # Converti automatiquement en array NumPy
+    err_acceptance_eff_y = acceptance_eff_y * np.sqrt((err_N_rec_y / yN_rec) ** 2 + (err_N_gen_y / yN_gen) ** 2)
+
+    # Calcul de la moyenne pondérée
+    weights = 1 / err_acceptance_eff_y**2  # Poids = 1/sigma^2 (array NumPy)
+    acceptance_eff_mean = np.nansum(acceptance_eff_y * weights) / np.nansum(weights)
+    err_acceptance_eff_mean = np.sqrt(1 / np.nansum(weights))
+    return (acceptance_eff_mean, err_acceptance_eff_mean)
+
+
 # %%
 folder_path = "/pbs/throng/training/nantes-m2-rps-exp/data"
 results = []
@@ -92,7 +123,7 @@ for file_name in os.listdir(folder_path):
         #-------------------------------------Pour 5 fichier seulement---------a supprimer plus tard (supprimer l'affichage surtout)--------------------
         file_count += 1
         #file_count >= 5
-        if file_count > 4 :
+        if file_count > 3 :
            # print("Limite de fichiers atteinte.")
             break
             
@@ -172,36 +203,6 @@ for file_name in os.listdir(folder_path):
 
 
 # %%
-###################### Création d'une fonction qui calcul AxE pour un run ############################
-def A_E(y_rec, y_gen):
-    """Return the acceptance efficiency for one run and the associated error"""
-    # Appliquer le filtre de rapidité
-    filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4)]
-    y_rec_f = ak.flatten(filtered_y_rec)  #applatir les données pour l'histo
-
-    filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)]
-    y_gen_f = ak.flatten(filtered_y_gen)  #applatir les données pour l'histo
-
-    #histo pour la rapidité des jpsi reconstruit
-    yN_rec, yBins_rec = np.histogram(y_rec_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
-    #histo pour la rapidité des jpsi généré
-    yN_gen, yBins_gen = np.histogram(y_gen_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
-
-    err_N_rec_y = np.sqrt(yN_rec)
-    err_N_gen_y = np.sqrt(yN_gen)
-
-    # Calcul de l'acceptance efficacité et son erreur pour chaque bin en rapidité entre 2.5 et 4
-    acceptance_eff_y = yN_rec / yN_gen  # Converti automatiquement en array NumPy
-    err_acceptance_eff_y = acceptance_eff_y * np.sqrt((err_N_rec_y / yN_rec) ** 2 + (err_N_gen_y / yN_gen) ** 2)
-
-    # Calcul de la moyenne pondérée
-    weights = 1 / err_acceptance_eff_y**2  # Poids = 1/sigma^2 (array NumPy)
-    acceptance_eff_mean = np.nansum(acceptance_eff_y * weights) / np.nansum(weights)
-    err_acceptance_eff_mean = np.sqrt(1 / np.nansum(weights))
-    return (acceptance_eff_mean, err_acceptance_eff_mean)
-
-
-# %%
 ######################################### test de la fonction ######################################
 Acceptance = A_E(y_pair,y_gen)[0]
 err_acceptance = A_E(y_pair,y_gen)[1]
@@ -222,27 +223,42 @@ print("rapidité filtré des jpsi généré : ",y_gen_f)
 #histo pour la rapidité des jpsi reconstruit
 yN_rec, yBins_rec = np.histogram(y_rec_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
 print("y_rec = ", yBins_rec)
-
+print("yN_rec = ",yN_rec)
 #histo pour la rapidité des jpsi généré
 yN_gen, yBins_gen = np.histogram(y_gen_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
 print("y_gen = ", yBins_gen)
 
 # %%
 # Affichage de l'histogramme
-plt.hist(y_rec_f, bins=50, density=True, alpha=0.7, color='b', edgecolor='black')
+plt.hist(y_rec_f, bins=50, density=False, alpha=0.7, color='b', edgecolor='black')
 # Ajout des labels et du titre
 plt.xlabel("Rapidité de la paire de muons reconstruit")
-plt.ylabel("Densité")
+plt.ylabel("Nombre de J/psi")
 plt.title("Distribution de la rapidité des paires de muons reconstruit")
 plt.grid(True)
+plt.savefig("ydistrib_mu_rec.pdf")
 
 # %%
 # Affichage de l'histogramme
-plt.hist(y_gen_f, bins=50, density=True, alpha=0.7, color='b', edgecolor='black')
+plt.hist(y_gen_f, bins=50, density=False, alpha=0.7, color='b', edgecolor='black')
 # Ajout des labels et du titre
 plt.xlabel("Rapidité de la paire de muons généré")
-plt.ylabel("Densité")
+plt.ylabel("Nombre de Jpsi")
 plt.title("Distribution de la rapidité des paires de muons généré")
+plt.grid(True)
+plt.savefig("ydistrib_mu_gen.pdf")
+
+# %%
+y_pair_f = ak.flatten(y_pair)
+
+yN_pair, yBins_pair = np.histogram(y_pair_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
+
+# Affichage de l'histogramme
+plt.hist(y_pair_f, bins=50, density=False, alpha=0.7, color='b', edgecolor='black')
+# Ajout des labels et du titre
+plt.xlabel("Rapidité de la paire de muons reconstruit")
+plt.ylabel("Nombre de Jpsi")
+plt.title("Distribution de la rapidité des paires de muons reconstruit")
 plt.grid(True)
 
 # %%

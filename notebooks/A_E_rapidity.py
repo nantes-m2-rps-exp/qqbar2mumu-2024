@@ -48,9 +48,9 @@ def A_E(y_rec, y_gen):
     y_gen_f = ak.flatten(filtered_y_gen)  #applatir les données pour l'histo
 
     #histo pour la rapidité des jpsi reconstruit
-    yN_rec, yBins_rec = np.histogram(y_rec_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
+    yN_rec, yBins_rec = np.histogram(y_rec_f,bins=5) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
     #histo pour la rapidité des jpsi généré
-    yN_gen, yBins_gen = np.histogram(y_gen_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
+    yN_gen, yBins_gen = np.histogram(y_gen_f,bins=5) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
 
     err_N_rec_y = np.sqrt(yN_rec)
     err_N_gen_y = np.sqrt(yN_gen)
