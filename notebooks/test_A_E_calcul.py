@@ -92,7 +92,7 @@ for file_name in os.listdir(folder_path):
         #-------------------------------------Pour 5 fichier seulement---------a supprimer plus tard (supprimer l'affichage surtout)--------------------
         file_count += 1
         #file_count >= 5
-        if file_count > 3 :
+        if file_count > 4 :
            # print("Limite de fichiers atteinte.")
             break
             
@@ -206,5 +206,43 @@ def A_E(y_rec, y_gen):
 Acceptance = A_E(y_pair,y_gen)[0]
 err_acceptance = A_E(y_pair,y_gen)[1]
 print(Acceptance, '+/-', err_acceptance)
+
+# %%
+# Appliquer le filtre de rapidité
+filtered_y_rec = y_pair[(y_pair <= -2.5) & (y_pair >= -4)]
+y_rec_f = ak.flatten(filtered_y_rec)
+
+filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)]
+y_gen_f = ak.flatten(filtered_y_gen)
+
+print("rapidité filtré des jpsi reconstruit : ",y_rec_f)
+print("rapidité filtré des jpsi généré : ",y_gen_f)
+
+
+#histo pour la rapidité des jpsi reconstruit
+yN_rec, yBins_rec = np.histogram(y_rec_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
+print("y_rec = ", yBins_rec)
+
+#histo pour la rapidité des jpsi généré
+yN_gen, yBins_gen = np.histogram(y_gen_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
+print("y_gen = ", yBins_gen)
+
+# %%
+# Affichage de l'histogramme
+plt.hist(y_rec_f, bins=50, density=True, alpha=0.7, color='b', edgecolor='black')
+# Ajout des labels et du titre
+plt.xlabel("Rapidité de la paire de muons reconstruit")
+plt.ylabel("Densité")
+plt.title("Distribution de la rapidité des paires de muons reconstruit")
+plt.grid(True)
+
+# %%
+# Affichage de l'histogramme
+plt.hist(y_gen_f, bins=50, density=True, alpha=0.7, color='b', edgecolor='black')
+# Ajout des labels et du titre
+plt.xlabel("Rapidité de la paire de muons généré")
+plt.ylabel("Densité")
+plt.title("Distribution de la rapidité des paires de muons généré")
+plt.grid(True)
 
 # %%
