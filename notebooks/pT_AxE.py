@@ -35,57 +35,49 @@ print("vector version",vector.__version__)
 
 vector.register_awkward()
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ATTENTION CE CODE NE SERT A RIEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # %%
-###################### Création d'une fonction qui calcul AxE pour un run ############################
-def A_E(y_rec, y_gen):
-    """Return the acceptance efficiency for one run and the associated error"""
-    # Appliquer le filtre de rapidité et de pT si on souhaite
-    filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4)]
-                                #& (pT >= 0) & (pT <= 1)] #si on veut avoir l'acceptance efficacité que dans une certaine range en pT
+###################### Création d'une fonction qui calcul pT pour un run ############################
+def pT_AxE (pT,pT_gen):
+    """"Return the AxE for one run in function of pT """
+    pT_f = ak.flatten(pT)  # Aplatir si c'est un awkward-array
+    pT_gen_f = ak.flatten(pT_gen)  # Aplatir si c'est un awkward-array
 
-    y_rec_f = ak.flatten(filtered_y_rec)  #applatir les données pour l'histo
-
-    filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)]
-                                #& (pT_gen >= 0) & (pT_gen <= 1)] #si on veut avoir l'acceptance efficacité que dans une certaine range en pT
-
-    y_gen_f = ak.flatten(filtered_y_gen)  #applatir les données pour l'histo
-
-    # Histogrammes pour la rapidité des J/ψ reconstruits et générés
-    yN_rec, yBins_rec = np.histogram(y_rec_f, bins=5)
-    yN_gen, yBins_gen = np.histogram(y_gen_f, bins=5)
+    #On fait des bins de 1 en pT
+    N_rec, Bins_rec = np.histogram(pT_f,bins=8,range = (0,8)) #N_rec est le nombre de Jpsi reconstruit dans chaque intervalle en pT
+    N_gen, Bins_gen = np.histogram(pT_gen_f,bins=8,range = (0,8)) #N_gen est le nombre de Jpsi généré dans chaque intervalle en pT
 
     # Éviter les divisions par zéro (remplace les 0 par NaN pour les ignorer dans la moyenne)
-    mask = (yN_gen > 0)  # On garde uniquement les bins où il y a des J/ψ générés
-    yN_rec = yN_rec[mask]
-    yN_gen = yN_gen[mask]
+    mask = (N_gen > 0)  # On garde uniquement les bins où il y a des J/ψ générés
+    N_rec = N_rec[mask]
+    N_gen = N_gen[mask]
 
     # Calcul des erreurs sur chaque bin
-    err_N_rec_y = np.sqrt(yN_rec)  # Erreur statistique (Poisson)
-    err_N_gen_y = np.sqrt(yN_gen)
+    err_N_rec = np.sqrt(N_rec)  # Erreur statistique (Poisson)
+    err_N_gen = np.sqrt(N_gen)
 
     # **Moyenne pondérée avec les comptages comme poids**
-    weights = yN_gen  # Poids = Nombre de J/ψ générés
-    yN_rec_mean = np.sum(yN_rec * weights) / np.sum(weights)
-    yN_gen_mean = np.sum(yN_gen * weights) / np.sum(weights)
+    weights = N_gen  # Poids = Nombre de J/ψ générés
+    N_rec_mean = np.sum(N_rec * weights) / np.sum(weights)
+    N_gen_mean = np.sum(N_gen * weights) / np.sum(weights)
+#  **Calcul de l'acceptance efficacité à partir des valeurs moyennées**
+    acceptance_eff_mean = N_rec_mean / N_gen_mean
+    err_acceptance_eff_mean = acceptance_eff_mean * np.sqrt(
+        (np.sqrt(N_rec_mean) / N_rec_mean) ** 2 + (np.sqrt(N_gen_mean) / N_gen_mean) ** 2)
 
-    #  **Calcul de l'acceptance efficacité à partir des valeurs moyennées**
-    acceptance_eff_mean = yN_rec_mean / yN_gen_mean
-    err_acceptance_eff_mean = acceptance_eff_mean *np.sqrt(
-        (np.sqrt(yN_rec_mean) / yN_rec_mean) ** 2 + (np.sqrt(yN_gen_mean) / yN_gen_mean) ** 2)
 
     return (acceptance_eff_mean, err_acceptance_eff_mean)
 
+    
 
 # %%
-############################################ test de la fonction sur plusieurs run ##########################################
-
 folder_path = "/pbs/throng/training/nantes-m2-rps-exp/data"
 results = []
 j_psi_gen = []
 j_psi_rec = []
-Acceptance_eff = []
-err_Acceptance_eff = []
+Acceptance_eff_pT = []
+err_Acceptance_eff_pT = []
 
 file_count =0
 
@@ -133,13 +125,14 @@ for file_name in os.listdir(folder_path):
         for i in range(len(m)):
             info = m[i]["nMuons"]
             nMuons += info
-       # print("nMuons = ", nMuons)
+        #print("nMuons = ", nMuons)
 
         #-------------------------------------Pour 5 fichier seulement---------a supprimer plus tard (supprimer l'affichage surtout)--------------------
         file_count += 1
-        #if file_count >= 3 :
+        #file_count >= 5
+        #if file_count > 2 :
            # print("Limite de fichiers atteinte.")
-           # break
+         #   break
             
         mask = (m["nMuons"] >= 2) & ak.all(n["Muon_GenMotherPDGCode"] == 443, axis=1)
         filtered_gen_events = n[ak.all(n["Muon_GenMotherPDGCode"] == 443, axis=1)]
@@ -179,7 +172,7 @@ for file_name in os.listdir(folder_path):
         # Calcul des masses invariantes et de la rapidité
         masses_opposite = (opposite_charge_pairs.muon1 + opposite_charge_pairs.muon2).mass
         y_pair = (opposite_charge_pairs.muon1 + opposite_charge_pairs.muon2).rapidity
-       # print("y_pair =", y_pair)
+        #print("y_pair =", y_pair)
 
     ################################### calcul du pT pour les Jpsi reconstruit ###################################
         pT = (opposite_charge_pairs.muon1 + opposite_charge_pairs.muon2).pt
@@ -196,7 +189,7 @@ for file_name in os.listdir(folder_path):
         pT_gen = (jpsi_combi_gen.muonA + jpsi_combi_gen.muonB).pt
         y_gen = (jpsi_combi_gen.muonA + jpsi_combi_gen.muonB).rapidity
 
-       # print("y_gen =", y_gen)
+        #print("y_gen =", y_gen)
 
 
 #print("pT_rec : ", pT)
@@ -204,36 +197,53 @@ for file_name in os.listdir(folder_path):
         
         # Appliquer le filtre de rapidité
         filtered_rec_events = masses_opposite[(y_pair <= -2.5) & (y_pair >= -4)]
-        filtered_gen_events2 = jpsi_combi_gen[(y_gen <= -2.5) & (y_gen >= -4)]
+        filtered_gen_events = jpsi_combi_gen[(y_gen <= -2.5) & (y_gen >= -4)]
 
         # Calcul de l'acceptance efficacité pour le run
-        Acceptance = A_E(y_pair,y_gen)[0]
-        err_acceptance = A_E(y_pair,y_gen)[1]
+        Acceptance_pT = pT_AxE(pT,pT_gen)[0]
+        err_acceptance_pT = pT_AxE(pT,pT_gen)[1]
 
-        Acceptance_eff.append(Acceptance)
-        err_Acceptance_eff.append(err_acceptance)
-        
-        
-
+        Acceptance_eff_pT.append(Acceptance_pT)
+        err_Acceptance_eff_pT.append(err_acceptance_pT)
 
         #print("nombre de Jpsi généré : ",len(filtered_gen_events))
-       # print("nombre de Jpsi reconstruit : ",len(filtered_events))
-        j_psi_gen.append(len(filtered_gen_events2))
-        j_psi_rec.append(len(filtered_rec_events))
+        #print("nombre de Jpsi reconstruit : ",len(filtered_events))
+        j_psi_gen.append(len(filtered_gen_events))
+        j_psi_rec.append(len(filtered_events))
 
-Acceptance_eff = np.array(Acceptance_eff)
-err_Acceptance_eff = np.array(err_Acceptance_eff)
-print("acceptance efficacité pour les différents run : ", Acceptance_eff)
-print("erreur sur l'acceptance efficacité pour les différents run : ", err_Acceptance_eff)
+Acceptance_eff_pT = np.array(Acceptance_eff_pT)
+err_Acceptance_eff_pT = np.array(err_Acceptance_eff_pT)
+print("acceptance efficacité pour les différents run : ", Acceptance_eff_pT)
+print("erreur sur l'acceptance efficacité pour les différents run : ", err_Acceptance_eff_pT)
 
 
+#print(results)
+#print(pT)
 
 # %%
-############################################ Calcul de l'acceptance efficacité moyenne sur tout les runs #############################################
-A_E_mean = np.nansum(Acceptance_eff) / len(Acceptance_eff)
-err_A_E_mean = np.sqrt(np.nansum(err_Acceptance_eff**2))
+######################################### test de la fonction ######################################
+Acceptance = pT_AxE(pT,pT_gen)[0]
+err_acceptance = pT_AxE(pT,pT_gen)[1]
+print(Acceptance, '+/-', err_acceptance)
 
-# Affichage des résultats
-print(f"Acceptance efficacité moyenne : {A_E_mean:.5f} ± {err_A_E_mean:.5f}")
+# %%
+##################################### évolution de l'acceptance efficacité en fonction de pT ######################################
+pT_f = ak.flatten(pT)  # Aplatir si c'est un awkward-array
+N_rec, Bins_rec = np.histogram(pT_f,bins=8,range = (0,8)) #N_rec est le nombre de Jpsi reconstruit dans chaque intervalle en pT
+print(len(Bins_rec))
+print(len(Acceptance_eff_pT))
+plt.figure()       
+plt.errorbar(Bins_rec[:-1],Acceptance_eff_pT, yerr=err_Acceptance_eff_pT, fmt='+',color = 'purple', label = 'erreur')
+width = 8/len(Bins_rec[:-1])
+plt.bar(Bins_rec[:-1], Acceptance_eff_pT,width = width, edgecolor='black', color='skyblue')
+#plt.hist(Bins_rec[1:])
+plt.plot(Bins_rec[:-1], Acceptance_eff_pT,'r')
+plt.xlabel('pT (GeV)')
+plt.ylabel("Acceptance efficacité")
+plt.title("Evolution de l'acceptance efficacité en fonction de pT (GeV)")
+plt.grid(True)
+plt.show()
+
+# %%
 
 # %%

@@ -41,10 +41,13 @@ vector.register_awkward()
 def A_E(y_rec, y_gen):
     """Return the acceptance efficiency for one run and the associated error"""
     # Appliquer le filtre de rapidité
-    filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4)]
+    filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4) 
+                            & (pT >= 0) & (pT <= 1)] #si on veut avoir l'acceptance efficacité que dans une certaine range en pT
     y_rec_f = ak.flatten(filtered_y_rec)  #applatir les données pour l'histo
 
-    filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)]
+    filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)
+                            & (pT_gen >= 0) & (pT_gen <= 1)] #si on veut avoir l'acceptance efficacité que dans une certaine range en pT
+
     y_gen_f = ak.flatten(filtered_y_gen)  #applatir les données pour l'histo
 
     # Histogrammes pour la rapidité des J/ψ reconstruits et générés
