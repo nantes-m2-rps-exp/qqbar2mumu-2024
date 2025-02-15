@@ -47,17 +47,26 @@ def A_E(y_rec, y_gen):
     filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)]
     y_gen_f = ak.flatten(filtered_y_gen)  #applatir les données pour l'histo
 
-    #histo pour la rapidité des jpsi reconstruit
-    yN_rec, yBins_rec = np.histogram(y_rec_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
-    #histo pour la rapidité des jpsi généré
-    yN_gen, yBins_gen = np.histogram(y_gen_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y
+# Création des histogrammes (sans densité)
+    yN_rec, yBins_rec = np.histogram(y_rec_f, bins=50)
+    yN_gen, yBins_gen = np.histogram(y_gen_f, bins=50)
 
-    err_N_rec_y = np.sqrt(yN_rec)
-    err_N_gen_y = np.sqrt(yN_gen)
+    # Calcul des largeurs de bins
+    bin_widths_rec = np.diff(yBins_rec)
+    bin_widths_gen = np.diff(yBins_gen)
 
-    # Calcul de l'acceptance efficacité et son erreur pour chaque bin en rapidité entre 2.5 et 4
-    acceptance_eff_y = yN_rec / yN_gen  # Converti automatiquement en array NumPy
-    err_acceptance_eff_y = acceptance_eff_y * np.sqrt((err_N_rec_y / yN_rec) ** 2 + (err_N_gen_y / yN_gen) ** 2)
+    # **Correction : Normalisation par l'aire totale**
+    integral_rec = np.sum(yN_rec * bin_widths_rec)  # Aire totale de l'histogramme reconstruit
+    integral_gen = np.sum(yN_gen * bin_widths_gen)  # Aire totale de l'histogramme généré
+
+    yN_rec_norm = yN_rec / integral_rec  # Normalisation
+    yN_gen_norm = yN_gen / integral_gen  # Normalisation
+
+    # Calcul de l'acceptance efficacité et son erreur
+    acceptance_eff_y = yN_rec_norm / yN_gen_norm
+    err_N_rec_y = np.sqrt(yN_rec) / integral_rec  # Erreur normalisée
+    err_N_gen_y = np.sqrt(yN_gen) / integral_gen  # Erreur normalisée
+    err_acceptance_eff_y = acceptance_eff_y * np.sqrt((err_N_rec_y / yN_rec_norm) ** 2 + (err_N_gen_y / yN_gen_norm) ** 2)
 
     # Calcul de la moyenne pondérée
     weights = 1 / err_acceptance_eff_y**2  # Poids = 1/sigma^2 (array NumPy)
