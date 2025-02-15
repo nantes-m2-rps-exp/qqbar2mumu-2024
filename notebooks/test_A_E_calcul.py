@@ -47,31 +47,29 @@ def A_E(y_rec, y_gen):
     filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)]
     y_gen_f = ak.flatten(filtered_y_gen)  #applatir les données pour l'histo
 
-# Création des histogrammes (sans densité)
-    yN_rec, yBins_rec = np.histogram(y_rec_f, bins=50)
-    yN_gen, yBins_gen = np.histogram(y_gen_f, bins=50)
+    # Histogrammes pour la rapidité des J/ψ reconstruits et générés
+    yN_rec, yBins_rec = np.histogram(y_rec_f, bins=5)
+    yN_gen, yBins_gen = np.histogram(y_gen_f, bins=5)
 
-    # Calcul des largeurs de bins
-    bin_widths_rec = np.diff(yBins_rec)
-    bin_widths_gen = np.diff(yBins_gen)
+    # Éviter les divisions par zéro (remplace les 0 par NaN pour les ignorer dans la moyenne)
+    mask = (yN_gen > 0)  # On garde uniquement les bins où il y a des J/ψ générés
+    yN_rec = yN_rec[mask]
+    yN_gen = yN_gen[mask]
 
-    # **Correction : Normalisation par l'aire totale**
-    integral_rec = np.sum(yN_rec * bin_widths_rec)  # Aire totale de l'histogramme reconstruit
-    integral_gen = np.sum(yN_gen * bin_widths_gen)  # Aire totale de l'histogramme généré
+    # Calcul des erreurs sur chaque bin
+    err_N_rec_y = np.sqrt(yN_rec)  # Erreur statistique (Poisson)
+    err_N_gen_y = np.sqrt(yN_gen)
 
-    yN_rec_norm = yN_rec / integral_rec  # Normalisation
-    yN_gen_norm = yN_gen / integral_gen  # Normalisation
+    # **Moyenne pondérée avec les comptages comme poids**
+    weights = yN_gen  # Poids = Nombre de J/ψ générés
+    yN_rec_mean = np.sum(yN_rec * weights) / np.sum(weights)
+    yN_gen_mean = np.sum(yN_gen * weights) / np.sum(weights)
 
-    # Calcul de l'acceptance efficacité et son erreur
-    acceptance_eff_y = yN_rec_norm / yN_gen_norm
-    err_N_rec_y = np.sqrt(yN_rec) / integral_rec  # Erreur normalisée
-    err_N_gen_y = np.sqrt(yN_gen) / integral_gen  # Erreur normalisée
-    err_acceptance_eff_y = acceptance_eff_y * np.sqrt((err_N_rec_y / yN_rec_norm) ** 2 + (err_N_gen_y / yN_gen_norm) ** 2)
+    #  **Calcul de l'acceptance efficacité à partir des valeurs moyennées**
+    acceptance_eff_mean = yN_rec_mean / yN_gen_mean
+    err_acceptance_eff_mean = acceptance_eff_mean * np.sqrt(
+        (np.sqrt(yN_rec_mean) / yN_rec_mean) ** 2 + (np.sqrt(yN_gen_mean) / yN_gen_mean) ** 2)
 
-    # Calcul de la moyenne pondérée
-    weights = 1 / err_acceptance_eff_y**2  # Poids = 1/sigma^2 (array NumPy)
-    acceptance_eff_mean = np.nansum(acceptance_eff_y * weights) / np.nansum(weights)
-    err_acceptance_eff_mean = np.sqrt(1 / np.nansum(weights))
     return (acceptance_eff_mean, err_acceptance_eff_mean)
 
 
@@ -227,7 +225,6 @@ y_gen_f = ak.flatten(filtered_y_gen)
 
 print("rapidité filtré des jpsi reconstruit : ",y_rec_f)
 print("rapidité filtré des jpsi généré : ",y_gen_f)
-
 
 #histo pour la rapidité des jpsi reconstruit
 yN_rec, yBins_rec = np.histogram(y_rec_f,bins=50) #yN_rec est le nombre de Jpsi reconstruit dans chaque intervalle en y

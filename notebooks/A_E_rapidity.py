@@ -63,6 +63,39 @@ def A_E(y_rec, y_gen):
     weights = 1 / err_acceptance_eff_y**2  # Poids = 1/sigma^2 (array NumPy)
     acceptance_eff_mean = np.nansum(acceptance_eff_y * weights) / np.nansum(weights)
     err_acceptance_eff_mean = np.sqrt(1 / np.nansum(weights))
+    return (acceptance_eff_mean, err_acceptance_eff_mean)###################### Création d'une fonction qui calcul AxE pour un run ############################
+def A_E(y_rec, y_gen):
+    """Return the acceptance efficiency for one run and the associated error"""
+    # Appliquer le filtre de rapidité
+    filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4)]
+    y_rec_f = ak.flatten(filtered_y_rec)  #applatir les données pour l'histo
+
+    filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)]
+    y_gen_f = ak.flatten(filtered_y_gen)  #applatir les données pour l'histo
+
+    # Histogrammes pour la rapidité des J/ψ reconstruits et générés
+    yN_rec, yBins_rec = np.histogram(y_rec_f, bins=5)
+    yN_gen, yBins_gen = np.histogram(y_gen_f, bins=5)
+
+    # Éviter les divisions par zéro (remplace les 0 par NaN pour les ignorer dans la moyenne)
+    mask = (yN_gen > 0)  # On garde uniquement les bins où il y a des J/ψ générés
+    yN_rec = yN_rec[mask]
+    yN_gen = yN_gen[mask]
+
+    # Calcul des erreurs sur chaque bin
+    err_N_rec_y = np.sqrt(yN_rec)  # Erreur statistique (Poisson)
+    err_N_gen_y = np.sqrt(yN_gen)
+
+    # **Moyenne pondérée avec les comptages comme poids**
+    weights = yN_gen  # Poids = Nombre de J/ψ générés
+    yN_rec_mean = np.sum(yN_rec * weights) / np.sum(weights)
+    yN_gen_mean = np.sum(yN_gen * weights) / np.sum(weights)
+
+    #  **Calcul de l'acceptance efficacité à partir des valeurs moyennées**
+    acceptance_eff_mean = yN_rec_mean / yN_gen_mean
+    err_acceptance_eff_mean = acceptance_eff_mean * np.sqrt(
+        (np.sqrt(yN_rec_mean) / yN_rec_mean) ** 2 + (np.sqrt(yN_gen_mean) / yN_gen_mean) ** 2)
+
     return (acceptance_eff_mean, err_acceptance_eff_mean)
 
 
