@@ -38,7 +38,7 @@ vector.register_awkward()
 
 # %%
 ###################### Création d'une fonction qui calcul AxE pour un run ############################
-def A_E(y_rec, y_gen):
+def A_E(y_rec, y_gen,pT = pT, pT_gen = pT_gen):
     """Return the acceptance efficiency for one run and the associated error"""
     # Appliquer le filtre de rapidité
     filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4) 
@@ -81,6 +81,10 @@ folder_path = "/pbs/throng/training/nantes-m2-rps-exp/data"
 results = []
 j_psi_gen = []
 j_psi_rec = []
+Acc_eff = []
+norm = 0
+err_jpsi_gen = []
+err_jpsi_rec = []
 
 file_count =0
 
@@ -107,7 +111,7 @@ for file_name in os.listdir(folder_path):
         for i in range(len(n)):
             info = n[i]["nMuonsGen"]
             nMuonsGen += info
-        print("nMuonsGen = ", nMuonsGen)
+        #print("nMuonsGen = ", nMuonsGen)
 
         events = file["eventsTree"]
         m = events.arrays([
@@ -128,14 +132,14 @@ for file_name in os.listdir(folder_path):
         for i in range(len(m)):
             info = m[i]["nMuons"]
             nMuons += info
-        print("nMuons = ", nMuons)
+        #print("nMuons = ", nMuons)
 
         #-------------------------------------Pour 5 fichier seulement---------a supprimer plus tard (supprimer l'affichage surtout)--------------------
         file_count += 1
         #file_count >= 5
-        if file_count > 3 :
+        #if file_count > 3 :
            # print("Limite de fichiers atteinte.")
-            break
+           # break
             
         mask = (m["nMuons"] >= 2) & ak.all(n["Muon_GenMotherPDGCode"] == 443, axis=1)
         filtered_gen_events = n[ak.all(n["Muon_GenMotherPDGCode"] == 443, axis=1)]
@@ -175,7 +179,7 @@ for file_name in os.listdir(folder_path):
         # Calcul des masses invariantes et de la rapidité
         masses_opposite = (opposite_charge_pairs.muon1 + opposite_charge_pairs.muon2).mass
         y_pair = (opposite_charge_pairs.muon1 + opposite_charge_pairs.muon2).rapidity
-        print("y_pair =", y_pair)
+        #print("y_pair =", y_pair)
 
     ################################### calcul du pT pour les Jpsi reconstruit ###################################
         pT = (opposite_charge_pairs.muon1 + opposite_charge_pairs.muon2).pt
@@ -192,7 +196,7 @@ for file_name in os.listdir(folder_path):
         pT_gen = (jpsi_combi_gen.muonA + jpsi_combi_gen.muonB).pt
         y_gen = (jpsi_combi_gen.muonA + jpsi_combi_gen.muonB).rapidity
 
-        print("y_gen =", y_gen)
+        #print("y_gen =", y_gen)
 
 
 #print("pT_rec : ", pT)
@@ -203,10 +207,19 @@ for file_name in os.listdir(folder_path):
         filtered_gen_events = jpsi_combi_gen[(y_gen <= -2.5) & (y_gen >= -4)]
 
 
-        print("nombre de Jpsi généré : ",len(filtered_gen_events))
-        print("nombre de Jpsi reconstruit : ",len(filtered_events))
+        #print("nombre de Jpsi généré : ",len(filtered_gen_events))
+        #print("nombre de Jpsi reconstruit : ",len(filtered_rec_events))
         j_psi_gen.append(len(filtered_gen_events))
-        j_psi_rec.append(len(filtered_events))
+        j_psi_rec.append(len(filtered_rec_events))
+
+        norm += len(filtered_gen_events)
+
+        AxE = len(filtered_rec_events)/len(filtered_gen_events)
+        Acc_eff.append(AxE)
+
+        err_jpsi_gen.append(np.sqrt(len(filtered_gen_events)))
+        err_jpsi_rec.append(np.sqrt(len(filtered_rec_events)))
+
 
 #print(results)
 #print(pT)
@@ -214,9 +227,27 @@ for file_name in os.listdir(folder_path):
 
 # %%
 ######################################### test de la fonction ######################################
-Acceptance = A_E(y_pair,y_gen)[0]
-err_acceptance = A_E(y_pair,y_gen)[1]
-print(Acceptance, '+/-', err_acceptance)
+#Acceptance = A_E(y_pair,y_gen)[0]
+#err_acceptance = A_E(y_pair,y_gen)[1]
+#print(Acceptance, '+/-', err_acceptance)
+Aeff = 0
+
+#Caclul de l'acceptance efficacité moyenne
+for i in range(len(Acc_eff)):
+    Aeff += j_psi_gen[i]/norm * Acc_eff[i]
+#print(Acc_eff)
+
+
+err_Aeff= []
+#Calcul de l'erreur
+for i in range(len(Acc_eff)):
+    err_Aeff.append( np.sqrt( (err_jpsi_gen[i] / j_psi_rec[i]) ** 2 + (err_jpsi_gen[i]/ j_psi_gen[i]) ** 2))
+
+error_AxE = 0
+for i in range(len(Acc_eff)):
+    error_AxE += pow(j_psi_gen[i]/norm * err_Aeff[i]/Acc_eff[i] , 2)
+
+print(Aeff, '+/-', error_AxE)
 
 # %%
 # Appliquer le filtre de rapidité

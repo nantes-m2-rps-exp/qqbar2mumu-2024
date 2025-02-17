@@ -38,7 +38,7 @@ vector.register_awkward()
 
 # %%
 ###################### Création d'une fonction qui calcul AxE pour un run ############################
-def A_E(y_rec, y_gen):
+def A_E(y_rec, y_gen, pT = pT, pT_gen = pT_gen):
     """Return the acceptance efficiency for one run and the associated error"""
     # Appliquer le filtre de rapidité et de pT si on souhaite
     filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4)]
@@ -86,6 +86,10 @@ j_psi_gen = []
 j_psi_rec = []
 Acceptance_eff = []
 err_Acceptance_eff = []
+Acc_eff = []
+norm = 0
+err_jpsi_gen = []
+err_jpsi_rec = []
 
 file_count =0
 
@@ -221,6 +225,14 @@ for file_name in os.listdir(folder_path):
         j_psi_gen.append(len(filtered_gen_events2))
         j_psi_rec.append(len(filtered_rec_events))
 
+        norm += len(filtered_gen_events)
+
+        AxE = len(filtered_rec_events)/len(filtered_gen_events)
+        Acc_eff.append(AxE)
+
+        err_jpsi_gen.append(np.sqrt(len(filtered_gen_events)))
+        err_jpsi_rec.append(np.sqrt(len(filtered_rec_events)))
+
 Acceptance_eff = np.array(Acceptance_eff)
 err_Acceptance_eff = np.array(err_Acceptance_eff)
 print("acceptance efficacité pour les différents run : ", Acceptance_eff)
@@ -229,11 +241,35 @@ print("erreur sur l'acceptance efficacité pour les différents run : ", err_Acc
 
 
 # %%
-############################################ Calcul de l'acceptance efficacité moyenne sur tout les runs #############################################
-A_E_mean = np.nansum(Acceptance_eff) / len(Acceptance_eff)
-err_A_E_mean = np.sqrt(np.nansum(err_Acceptance_eff**2))
+############################################ Calcul de l'acceptance efficacité moyenne sur tout les runs avec la fonction #########################################
+# ATTENTION CETTE METHODE EST MOINS PRECISE #
+gen_jpsi = np.array(j_psi_gen)
+A_E_mean = np.nansum((gen_jpsi/norm)*Acceptance_eff)
+err_A_E_mean = np.nansum(pow((gen_jpsi/norm) * (err_Acceptance_eff/Acceptance_eff),2))
 
 # Affichage des résultats
 print(f"Acceptance efficacité moyenne : {A_E_mean:.5f} ± {err_A_E_mean:.5f}")
+
+# %%
+######################### Calcul de l'acceptance efficacité moyenne sur tout les runs directement dans la boucle ##########################
+
+Aeff = 0
+
+#Caclul de l'acceptance efficacité moyenne
+for i in range(len(Acc_eff)):
+    Aeff += j_psi_gen[i]/norm * Acc_eff[i]
+#print(Acc_eff)
+
+
+err_Aeff= []
+#Calcul de l'erreur
+for i in range(len(Acc_eff)):
+    err_Aeff.append( np.sqrt( (err_jpsi_gen[i] / j_psi_rec[i]) ** 2 + (err_jpsi_gen[i]/ j_psi_gen[i]) ** 2))
+
+error_AxE = 0
+for i in range(len(Acc_eff)):
+    error_AxE += pow(j_psi_gen[i]/norm * err_Aeff[i]/Acc_eff[i] , 2)
+
+print(f"Acceptance efficacité moyenne : {Aeff:.5f} ± {error_AxE:.5f}")
 
 # %%
