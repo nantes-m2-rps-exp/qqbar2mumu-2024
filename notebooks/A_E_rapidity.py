@@ -38,16 +38,16 @@ vector.register_awkward()
 
 # %%
 ###################### Création d'une fonction qui calcul AxE pour un run ############################
-def A_E(y_rec, y_gen, pT = pT, pT_gen = pT_gen):
+def A_E(y_rec, y_gen):
     """Return the acceptance efficiency for one run and the associated error"""
     # Appliquer le filtre de rapidité et de pT si on souhaite
-    filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4)]
-                                #& (pT >= 0) & (pT <= 1)] #si on veut avoir l'acceptance efficacité que dans une certaine range en pT
+    filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4)
+                                & (pT >= 1)] #si on veut avoir l'acceptance efficacité que dans une certaine range en pT
 
     y_rec_f = ak.flatten(filtered_y_rec)  #applatir les données pour l'histo
 
-    filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)]
-                                #& (pT_gen >= 0) & (pT_gen <= 1)] #si on veut avoir l'acceptance efficacité que dans une certaine range en pT
+    filtered_y_gen = y_gen[(y_gen <= -2.5) & (y_gen >= -4)
+                                & (pT_gen >= 1)] #si on veut avoir l'acceptance efficacité que dans une certaine range en pT
 
     y_gen_f = ak.flatten(filtered_y_gen)  #applatir les données pour l'histo
 
@@ -184,6 +184,8 @@ for file_name in os.listdir(folder_path):
         masses_opposite = (opposite_charge_pairs.muon1 + opposite_charge_pairs.muon2).mass
         y_pair = (opposite_charge_pairs.muon1 + opposite_charge_pairs.muon2).rapidity
        # print("y_pair =", y_pair)
+        #print(len(masses_opposite))
+        #print(len(y_pair))
 
     ################################### calcul du pT pour les Jpsi reconstruit ###################################
         pT = (opposite_charge_pairs.muon1 + opposite_charge_pairs.muon2).pt
@@ -207,8 +209,9 @@ for file_name in os.listdir(folder_path):
 #print("pT_gen : ", pT_gen)
         
         # Appliquer le filtre de rapidité
-        filtered_rec_events = masses_opposite[(y_pair <= -2.5) & (y_pair >= -4)]
-        filtered_gen_events2 = jpsi_combi_gen[(y_gen <= -2.5) & (y_gen >= -4)]
+        filtered_rec_events2 = opposite_charge_pairs[(y_pair <= -2.5) & (y_pair >= -4) & (pT >= 1)]
+        filtered_gen_events2 = jpsi_combi_gen[(y_gen <= -2.5) & (y_gen >= -4) & (pT_gen >= 1)]
+
 
         # Calcul de l'acceptance efficacité pour le run
         Acceptance = A_E(y_pair,y_gen)[0]
@@ -223,15 +226,15 @@ for file_name in os.listdir(folder_path):
         #print("nombre de Jpsi généré : ",len(filtered_gen_events))
        # print("nombre de Jpsi reconstruit : ",len(filtered_events))
         j_psi_gen.append(len(filtered_gen_events2))
-        j_psi_rec.append(len(filtered_rec_events))
+        j_psi_rec.append(len(filtered_rec_events2))
 
-        norm += len(filtered_gen_events)
+        norm += len(filtered_gen_events2)
 
-        AxE = len(filtered_rec_events)/len(filtered_gen_events)
+        AxE = len(filtered_rec_events2)/len(filtered_gen_events2)
         Acc_eff.append(AxE)
 
-        err_jpsi_gen.append(np.sqrt(len(filtered_gen_events)))
-        err_jpsi_rec.append(np.sqrt(len(filtered_rec_events)))
+        err_jpsi_gen.append(np.sqrt(len(filtered_gen_events2)))
+        err_jpsi_rec.append(np.sqrt(len(filtered_rec_events2)))
 
 Acceptance_eff = np.array(Acceptance_eff)
 err_Acceptance_eff = np.array(err_Acceptance_eff)

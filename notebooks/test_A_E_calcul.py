@@ -38,7 +38,7 @@ vector.register_awkward()
 
 # %%
 ###################### Création d'une fonction qui calcul AxE pour un run ############################
-def A_E(y_rec, y_gen,pT = pT, pT_gen = pT_gen):
+def A_E(y_rec, y_gen):
     """Return the acceptance efficiency for one run and the associated error"""
     # Appliquer le filtre de rapidité
     filtered_y_rec = y_rec[(y_rec <= -2.5) & (y_rec >= -4) 
@@ -137,9 +137,9 @@ for file_name in os.listdir(folder_path):
         #-------------------------------------Pour 5 fichier seulement---------a supprimer plus tard (supprimer l'affichage surtout)--------------------
         file_count += 1
         #file_count >= 5
-        #if file_count > 3 :
-           # print("Limite de fichiers atteinte.")
-           # break
+        if file_count > 3 :
+            print("Limite de fichiers atteinte.")
+            break
             
         mask = (m["nMuons"] >= 2) & ak.all(n["Muon_GenMotherPDGCode"] == 443, axis=1)
         filtered_gen_events = n[ak.all(n["Muon_GenMotherPDGCode"] == 443, axis=1)]
@@ -299,6 +299,16 @@ plt.hist(y_pair_f, bins=50, density=False, alpha=0.7, color='b', edgecolor='blac
 plt.xlabel("Rapidité de la paire de muons reconstruit")
 plt.ylabel("Nombre de Jpsi")
 plt.title("Distribution de la rapidité des paires de muons reconstruit")
+plt.grid(True)
+
+# %%
+# Affichage de l'histogramme
+pT = ak.flatten(pT)
+plt.hist(pT, bins=50, density=False, alpha=0.7, color='b', edgecolor='black')
+# Ajout des labels et du titre
+plt.xlabel("Impulsion transverse de la paire de muons reconstruit")
+plt.ylabel("Nombre de J/psi")
+plt.title("Distribution de l'impulsion transverse des paires de muons reconstruit")
 plt.grid(True)
 
 # %%
